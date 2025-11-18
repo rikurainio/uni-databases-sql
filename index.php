@@ -1,8 +1,26 @@
 <?php
 session_start();
 
+require_once __DIR__ . '/db_config.php';
+
 if (!empty($_SESSION['transfer_success']) || !empty($_SESSION['transfer_error'])) {
     unset($_SESSION['transfer_success'], $_SESSION['transfer_error']);
+}
+
+$accounts = [];
+$db_error = null;
+
+try {
+    $conn = get_db_connection();
+    $result = pg_query($conn, 'SELECT tilinumero, omistaja, summa FROM TILIT ORDER BY omistaja');
+    if ($result) {
+        $accounts = pg_fetch_all($result) ?: [];
+    } else {
+        $db_error = 'Tilien hakeminen epäonnistui.';
+    }
+    pg_close($conn);
+} catch (Throwable $e) {
+    $db_error = 'Tietokantavirhe: ' . $e->getMessage();
 }
 ?>
 <!DOCTYPE html>
@@ -52,6 +70,33 @@ if (!empty($_SESSION['transfer_success']) || !empty($_SESSION['transfer_error'])
         button:hover {
             background: #0056b3;
         }
+        .accounts {
+            margin-top: 2rem;
+            max-width: 600px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 0.6rem;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+        }
+        th {
+            background: #f0f0f0;
+        }
+        .error {
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+            max-width: 500px;
+        }
     </style>
 </head>
 <body>
@@ -69,6 +114,34 @@ if (!empty($_SESSION['transfer_success']) || !empty($_SESSION['transfer_error'])
 
         <button type="submit">Suorita tilinsiirto</button>
     </form>
+
+    <div class="accounts">
+        <h2>Esimerkkitilit</h2>
+        <?php if ($db_error): ?>
+            <div class="error"><?php echo htmlspecialchars($db_error, ENT_QUOTES, 'UTF-8'); ?></div>
+        <?php elseif (empty($accounts)): ?>
+            <p>Ei tilitietoja.</p>
+        <?php else: ?>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tilinumero</th>
+                        <th>Omistaja</th>
+                        <th>Saldo (EUR)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($accounts as $account): ?>
+                        <tr>
+                            <td><?php echo htmlspecialchars($account['tilinumero'], ENT_QUOTES, 'UTF-8'); ?></td>
+                            <td><?php echo htmlspecialchars($account['omistaja'], ENT_QUOTES, 'UTF-8'); ?></td>
+                            <td><?php echo number_format((float)$account['summa'], 2, ',', ' '); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+    </div>
 </body>
 </html>
 
