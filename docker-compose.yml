@@ -1,0 +1,28 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16
+    container_name: tilit_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tilit_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: salasana
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+
+  web:
+    build: .
+    container_name: tilit_web
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+
+volumes:
+  db_data:
+
+
