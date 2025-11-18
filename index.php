@@ -88,6 +88,52 @@ try {
         th {
             background: #f0f0f0;
         }
+        .account-number {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .copy-btn {
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            padding: 0.2rem;
+            border-radius: 4px;
+            transition: background 0.2s;
+            position: relative;
+        }
+        .copy-btn:hover {
+            background: rgba(0, 123, 255, 0.15);
+        }
+        .copy-btn:focus {
+            outline: 2px solid rgba(0, 123, 255, 0.5);
+        }
+        .copy-btn svg {
+            width: 18px;
+            height: 18px;
+            stroke: #007bff;
+            stroke-width: 2;
+            fill: none;
+        }
+        .copy-toast {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: #007bff;
+            color: #fff;
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        .copy-toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
         .error {
             color: #721c24;
             background-color: #f8d7da;
@@ -133,7 +179,22 @@ try {
                 <tbody>
                     <?php foreach ($accounts as $account): ?>
                         <tr>
-                            <td><?php echo htmlspecialchars($account['tilinumero'], ENT_QUOTES, 'UTF-8'); ?></td>
+                            <td>
+                                <div class="account-number">
+                                    <span><?php echo htmlspecialchars($account['tilinumero'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                    <button
+                                        class="copy-btn"
+                                        type="button"
+                                        data-copy="<?php echo htmlspecialchars($account['tilinumero'], ENT_QUOTES, 'UTF-8'); ?>"
+                                        aria-label="Kopioi tilinumero"
+                                    >
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4c0-1.1.9-2 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
                             <td><?php echo htmlspecialchars($account['omistaja'], ENT_QUOTES, 'UTF-8'); ?></td>
                             <td><?php echo number_format((float)$account['summa'], 2, ',', ' '); ?></td>
                         </tr>
@@ -142,6 +203,35 @@ try {
             </table>
         <?php endif; ?>
     </div>
+
+    <div id="copyToast" class="copy-toast" role="status" aria-live="polite">Kopioitu</div>
+
+    <script>
+        const toast = document.getElementById('copyToast');
+        let toastTimeout;
+
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.add('show');
+
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        document.querySelectorAll('.copy-btn').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                const text = btn.dataset.copy;
+                try {
+                    await navigator.clipboard.writeText(text);
+                    showToast('Tilinumero kopioitu');
+                } catch (err) {
+                    showToast('Kopiointi epäonnistui');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
 
