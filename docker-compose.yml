@@ -17,12 +17,23 @@ services:
     build: .
     container_name: tilit_web
     restart: unless-stopped
-    ports:
-      - "8080:80"
     depends_on:
       - db
+    networks:
+      - default
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tilit.rule=Host(`tilit.drafter.lol`)"
+      - "traefik.http.routers.tilit.entrypoints=websecure"
+      - "traefik.http.routers.tilit.tls.certresolver=myresolver"
+      - "traefik.http.services.tilit.loadbalancer.server.port=80"
 
 volumes:
   db_data:
+
+networks:
+  traefik_proxy:
+    external: true
 
 
